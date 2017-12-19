@@ -15,6 +15,7 @@
 // 
 #pragma once
 
+#include <opencv2/opencv.hpp>
 #include "gpu_image.h"
 
 cpu_image<uchar4> cpu_image_from_qimage(const QImage& image);
@@ -33,3 +34,8 @@ QImage gpu_image_to_qimage(const gpu_image<uchar>& image);
 QImage gpu_image_to_qimage(const gpu_image<uchar4>& image);
 QImage gpu_image_to_qimage(const gpu_image<float>& image);
 QImage gpu_image_to_qimage(const gpu_image<float4>& image);
+
+void qimage_to_mat(const QImage& image, cv::OutputArray out);
+void mat_to_qimage(cv::InputArray image, QImage& out);
+
+

@@ -88,6 +88,8 @@ IF(WITH_FFMPEG STREQUAL 'ON')
     ENDIF()
 ENDIF()
 
+FIND_PACKAGE(OpenCV)
+
 FIND_PACKAGE(Qt4)
 
 MACRO(QT4_AUTO_WRAP outfiles)
@@ -183,7 +185,7 @@ IF(WIN32)
     ADD_CUSTOM_COMMAND(TARGET STAGE POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E make_directory ${STAGE_DIR}
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CUDA_CUDART_DLL}" ${STAGE_DIR}
-        COMMAND if "${STAGE_CFG}"==Debug (
+        COMMAND if "${STAGE_CFG}" == Debug (
                 "${CMAKE_COMMAND}" -E copy_if_different ${QT_BINARY_DIR}/QtCored4.dll ${STAGE_DIR} &&
                 "${CMAKE_COMMAND}" -E copy_if_different ${QT_BINARY_DIR}/QtCored4.pdb ${STAGE_DIR} &&
                 "${CMAKE_COMMAND}" -E copy_if_different ${QT_BINARY_DIR}/QtGuid4.dll ${STAGE_DIR} && 

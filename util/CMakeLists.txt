@@ -38,6 +38,10 @@ IF(FFMPEG_FOUND)
         ffmpeg_encoder.h )
 ENDIF()
 
+IF(OPENCV_FOUND)
+    INCLUDE_DIRECTORIES( ${FFmpeg_INCLUDE_DIR} )
+ENDIF()
+
 QT4_AUTO_WRAP(sources ${sources})
 CUDA_ADD_LIBRARY(util STATIC ${sources})
 

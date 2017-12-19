@@ -15,7 +15,9 @@
 // 
 #include "imageutil.h"
 #include "gpu_convert.h"
-
+#include <iostream>
+using namespace cv;
+using namespace std;
 
 cpu_image<uchar4> cpu_image_from_qimage(const QImage& image) {
     if (!image.isNull()) {
@@ -133,3 +135,70 @@ QImage gpu_image_to_qimage(const gpu_image<float>& image) {
 QImage gpu_image_to_qimage(const gpu_image<float4>& image) {
     return gpu_image_to_qimage(gpu_32f_to_8u(image));
 }
+
+void qimage_to_mat(const QImage& image, cv::OutputArray out) {
+
+	switch(image.format()) {
+		case QImage::Format_Invalid:
+		{
+			Mat empty;
+			empty.copyTo(out);
+			break;
+		}
+		case QImage::Format_RGB32:
+		{
+			Mat view(image.height(),image.width(),CV_8UC4,(void *)image.constBits(),image.bytesPerLine());
+			view.copyTo(out);
+			break;
+		}
+		case QImage::Format_RGB888:
+		{
+			Mat view(image.height(),image.width(),CV_8UC3,(void *)image.constBits(),image.bytesPerLine());
+			cvtColor(view, out, COLOR_RGB2BGR);
+			break;
+		}
+		default:
+		{
+			QImage conv = image.convertToFormat(QImage::Format_ARGB32);
+			Mat view(conv.height(),conv.width(),CV_8UC4,(void *)conv.constBits(),conv.bytesPerLine());
+			view.copyTo(out);
+			break;
+		}
+	}
+}
+
+void mat_to_qimage(cv::InputArray image, QImage& out)
+{
+	switch(image.type())
+	{
+		case CV_8UC4:
+		{
+			Mat view(image.getMat());
+			QImage view2(view.data, view.cols, view.rows, view.step[0], QImage::Format_ARGB32);
+			out = view2;
+			break;
+		}
+		case CV_8UC3:
+		{
+			Mat mat;
+			cvtColor(image, mat, COLOR_BGR2BGRA); //COLOR_BGR2RGB doesn't behave so use RGBA
+			QImage view(mat.data, mat.cols, mat.rows, mat.step[0], QImage::Format_ARGB32);
+			out = view;
+			break;
+		}
+		case CV_8UC1:
+		{
+			Mat mat;
+			cvtColor(image, mat, COLOR_GRAY2BGRA);
+			QImage view(mat.data, mat.cols, mat.rows, mat.step[0], QImage::Format_ARGB32);
+			out = view;
+			break;
+		}
+		default:
+		{
+			throw invalid_argument("Image format not supported");
+			break;
+		}
+	}
+}
+
