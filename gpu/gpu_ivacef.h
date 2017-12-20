@@ -31,3 +31,7 @@ gpu_image<float4> gpu_ivacef( const gpu_image<float4>& src, int N=5,
                               float max_angle=22.5f, float sigma_i=0, float sigma_g=1.5f, 
                               float r=2, float tau_s=0.005f, float sigma_a=1.5f );
 
+gpu_image<float4> gpu_sobel_filt( const gpu_image<float4>& src, 
+                              const gpu_image<float4>& prev, float threshold );
+
+

@@ -208,31 +208,31 @@ template <> gpu_image<uchar4> gpu_image_from_mat(cv::InputArray image) {
     if (image.empty()) 
         gpu_image<uchar4>();
 
-	switch(image.type())
-	{
-	    case CV_8UC4:
-	    {
-	        Mat view(image.getMat());
+    switch(image.type())
+    {
+        case CV_8UC4:
+        {
+            Mat view(image.getMat());
             return gpu_image<uchar4>((uchar4*)view.data, view.step[0], view.cols, view.rows);
-	    }
-	    case CV_8UC3:
-	    {
-	        Mat mat;
-	        cvtColor(image, mat, COLOR_BGR2BGRA); //COLOR_BGR2RGB doesn't behave so use RGBA
-	        return gpu_image<uchar4>((uchar4*)mat.data, mat.step[0], mat.cols, mat.rows);
-	    }
-	    case CV_8UC1:
-	    {
-	        Mat mat;
-	        cvtColor(image, mat, COLOR_GRAY2BGRA);
-	        return gpu_image<uchar4>((uchar4*)mat.data, mat.step[0], mat.cols, mat.rows);
-	    }
-	    default:
-	    {
-	        throw invalid_argument("Image format not supported");
-	        break;
-	    }
-	}
+        }
+        case CV_8UC3:
+        {
+            Mat mat;
+            cvtColor(image, mat, COLOR_BGR2BGRA); //COLOR_BGR2RGB doesn't behave so use RGBA
+            return gpu_image<uchar4>((uchar4*)mat.data, mat.step[0], mat.cols, mat.rows);
+        }
+        case CV_8UC1:
+        {
+            Mat mat;
+            cvtColor(image, mat, COLOR_GRAY2BGRA);
+            return gpu_image<uchar4>((uchar4*)mat.data, mat.step[0], mat.cols, mat.rows);
+        }
+        default:
+        {
+            throw invalid_argument("Image format not supported");
+            break;
+        }
+    }
 
     return gpu_image<uchar4>();
 }
@@ -240,14 +240,19 @@ template <> gpu_image<uchar4> gpu_image_from_mat(cv::InputArray image) {
 template <> gpu_image<float4> gpu_image_from_mat(cv::InputArray image) {
     if (image.empty())
         return gpu_image<float4>();
-
+    if( image.type() == CV_32FC4)
+    {
+        Mat data(image.getMat());
+        Mat scaled;
+        data.convertTo(scaled, CV_32FC4, 1.0/255.0);
+        return gpu_image<float4>((float4*)scaled.data, scaled.step[0], scaled.cols, scaled.rows);
+    }
     return gpu_8u_to_32f(gpu_image_from_mat<uchar4>(image));
-    
 }
 
 void gpu_image_to_mat(const gpu_image<uchar>& image, cv::OutputArray out) {
 
-	Mat data(image.h(), image.w(), CV_8UC1);
+    Mat data(image.h(), image.w(), CV_8UC1);
     //for (int i = 0; i < 256; ++i) dst.setColor(i, qRgb(i,i,i));
     copy(data.data, data.step[0], &image);
     data.copyTo(out);

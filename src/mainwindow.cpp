@@ -13,6 +13,8 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
+
+#include <iostream>
 #include "mainwindow.h"
 #include "param.h"
 #include "paramui.h"
@@ -25,7 +27,8 @@
 #include "gpu_stgauss2.h"
 #include "gpu_gauss.h"
 #include "gpu_util.h"
-
+using namespace cv;
+using namespace std;
 
 MainWindow::MainWindow() {
     setupUi(this);
@@ -191,12 +194,38 @@ void MainWindow::process() {
         return;
     }
 
-    gpu_image<float4> img = gpu_image_from_qimage<float4>(src);
+    Mat mimg, mimg2;
+	qimage_to_mat(src, mimg);
+	mimg.convertTo(mimg2, CV_32FC4);
+
+    gpu_image<float4> img = gpu_image_from_mat<float4>(mimg2);
     gpu_image<float4> st;
     gpu_image<float4> tfm;
 
     for (int k = 0; k < m_N; ++k) {
-        st = gpu_ivacef_sobel(img, st, m_sigma_d, m_tau_r);
+		if(false)
+        	st = gpu_ivacef_sobel(img, st, m_sigma_d, m_tau_r);
+		else
+		{
+		    gpu_image<float4> st2 = gpu_sobel_filt(img, st, m_tau_r);
+			st = gpu_gauss_filter_xy(st2, m_sigma_d);
+		}
+
+		Mat tmp;
+		gpu_image_to_mat(st, tmp);
+		imwrite("st.png", tmp);
+		
+		imwrite("st1.png", mimg2);
+		Mat st2, st3;
+		Sobel(mimg2, st2, CV_32F, 1, 1, 1);
+		double min, max;
+		cv::minMaxLoc(st2, &min, &max);
+		cout << "st2type " << st2.type() << " (" << min << "," << max << ")" << endl;
+		imwrite("st2.png", (st2 - min) / (max-min) * 255.0);
+
+		GaussianBlur(st2, st3, cv::Size(0, 0), m_tau_r);
+		imwrite("st3.png", st3);
+
         img = gpu_stgauss2_filter(img, st, m_sigma_t, m_max_angle, true, true, true, 2, 1);
 
         st = gpu_ivacef_sobel(img, st, m_sigma_d, m_tau_r);

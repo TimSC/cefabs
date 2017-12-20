@@ -26,7 +26,7 @@ static texture<float, 2, cudaReadModeElementType> texSRC1;
 static texture<float4, 2, cudaReadModeElementType> texSRC4;
 
 
-__global__ void imp_st_sobel( const gpu_plm2<float4> prev, gpu_plm2<float4> dst, float threshold2 ) {
+__global__ void imp_gpu_sobel_filt( const gpu_plm2<float4> prev, gpu_plm2<float4> dst, float threshold2 ) {
     const int ix = __mul24(blockDim.x, blockIdx.x) + threadIdx.x;
     const int iy = __mul24(blockDim.y, blockIdx.y) + threadIdx.y;
     if (ix >= dst.w || iy >= dst.h) 
@@ -174,10 +174,10 @@ static gpu_image<float4> relax( const gpu_image<float4>& st ) {
 }
 
 
-static gpu_image<float4> st_sobel( const gpu_image<float4>& src, const gpu_image<float4>& prev, float threshold ) {
+gpu_image<float4> gpu_sobel_filt( const gpu_image<float4>& src, const gpu_image<float4>& prev, float threshold ) {
     gpu_image<float4> dst(src.size());
     bind(&texSRC4, src);
-    imp_st_sobel<<<src.blocks(), src.threads()>>>(prev, dst, threshold*threshold);
+    imp_gpu_sobel_filt<<<src.blocks(), src.threads()>>>(prev, dst, threshold*threshold);
     GPU_CHECK_ERROR();
     if (!prev.is_valid()) {
         dst = relax(dst);
@@ -319,7 +319,7 @@ gpu_image<float4> gpu_ivacef_shock( const gpu_image<float>& L, const gpu_image<f
 gpu_image<float4> gpu_ivacef_sobel( const gpu_image<float4>& src, const gpu_image<float4>& st, 
                                     float sigma_d, float tau_r )
 {
-    gpu_image<float4> st2 = st_sobel(src, st, tau_r);
+    gpu_image<float4> st2 = gpu_sobel_filt(src, st, tau_r);
     st2 = gpu_gauss_filter_xy(st2, sigma_d);
     return st2;
 }
