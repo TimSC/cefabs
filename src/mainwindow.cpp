@@ -211,25 +211,23 @@ void MainWindow::process() {
 		{
 		    gpu_image<float4> st2 = gpu_sobel_filt(img, st, m_tau_r);
 
-			Mat tmp;
-			gpu_image_to_mat(st2, tmp);
-
-			imwrite("st.png", tmp);
-
 			if (!st.is_valid()) {
 				st2 = gpu_ivacef_relax(st2);
 			}
 
 			st = gpu_gauss_filter_xy(st2, m_sigma_d);
+
+			//Mat tmp;
+			//gpu_image_to_mat(st, tmp);
+			//imwrite("st.png", tmp);
 		}
 		
-		Mat st2;
-		cef_opencv_sobel(ming3, st2);
-	
-		imwrite("st2.png", st2*255.0);
+		Mat st2, st3;
+		cef_opencv_sobel(ming3, st2);	
+		//imwrite("st2.png", st2*255.0);
 
-		//GaussianBlur(st2, st3, cv::Size(0, 0), m_tau_r);
-		//imwrite("st3.png", st3);
+		GaussianBlur(st2, st3, cv::Size(0, 0), m_sigma_d);
+		//imwrite("st3.png", st3*255.0);
 
         img = gpu_stgauss2_filter(img, st, m_sigma_t, m_max_angle, true, true, true, 2, 1);
 
