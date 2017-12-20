@@ -20,6 +20,7 @@
 #include "paramui.h"
 #include "cudadevicedialog.h"
 #include "imageutil.h"
+#include "imgproc.h"
 #include "gpu_image.h"
 #include "gpu_ivacef.h"
 #include "gpu_color.h"
@@ -194,9 +195,10 @@ void MainWindow::process() {
         return;
     }
 
-    Mat mimg, mimg2;
+    Mat mimg, mimg2, ming3;
 	qimage_to_mat(src, mimg);
 	mimg.convertTo(mimg2, CV_32FC4);
+	mimg.convertTo(ming3, CV_32FC4, 1.0f/255.0f);
 
     gpu_image<float4> img = gpu_image_from_mat<float4>(mimg2);
     gpu_image<float4> st;
@@ -221,45 +223,9 @@ void MainWindow::process() {
 			st = gpu_gauss_filter_xy(st2, m_sigma_d);
 		}
 		
-		Mat nrm, st2h, st2v, st3, st2;
-		Mat mimg3;
-		cvtColor(mimg2, mimg3, COLOR_RGBA2RGB);
-		nrm = mimg3 / 255.0f;
-		Mat hk = Mat(3, 3, CV_32F, Scalar(0.0f));
-		hk.at<float>(0,0) = -0.183f;
-		hk.at<float>(1,0) = -0.634f;
-		hk.at<float>(2,0) = -0.183f;
-		hk.at<float>(0,2) = 0.183f;
-		hk.at<float>(1,2) = 0.634f;
-		hk.at<float>(2,2) = 0.183f;
-		hk *= 0.5f;
-		
-		filter2D(nrm, st2h, CV_32F, hk);
-		filter2D(nrm, st2v, CV_32F, hk.t());
-		
-		float thres2 = m_tau_r*m_tau_r;
-		Mat blank(st2h.size(), CV_32FC4);
-		st2 = blank;
-		for(size_t r=0; r<st2h.rows; r++)
-		{
-			for(size_t c=0; c<st2h.cols; c++)
-			{
-				cv::Vec3f &u = st2h.at<cv::Vec3f>(r,c);
-				cv::Vec3f &v = st2v.at<cv::Vec3f>(r,c);
-
-				float uu = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
-				float vv = v[0]*v[0]+v[1]*v[1]+v[2]*v[2];
-				float uv = u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
-				float mag = uu*uu+vv*vv+2.0f*uv*uv;
-
-				st2.at<cv::Vec4f>(r,c)[0] = uu;
-				st2.at<cv::Vec4f>(r,c)[1] = vv;
-				st2.at<cv::Vec4f>(r,c)[2] = uv;
-				st2.at<cv::Vec4f>(r,c)[3] = mag;
-
-			}
-		}
-
+		Mat st2;
+		cef_opencv_sobel(ming3, st2);
+	
 		imwrite("st2.png", st2*255.0);
 
 		//GaussianBlur(st2, st3, cv::Size(0, 0), m_tau_r);
