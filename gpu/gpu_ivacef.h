@@ -34,4 +34,5 @@ gpu_image<float4> gpu_ivacef( const gpu_image<float4>& src, int N=5,
 gpu_image<float4> gpu_sobel_filt( const gpu_image<float4>& src, 
                               const gpu_image<float4>& prev, float threshold );
 
+gpu_image<float4> gpu_ivacef_relax( const gpu_image<float4>& st );
 

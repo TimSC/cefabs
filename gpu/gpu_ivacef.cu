@@ -162,12 +162,12 @@ static gpu_image<float4> relax_up( const gpu_image<float4>& src0, const gpu_imag
 }
 
 
-static gpu_image<float4> relax( const gpu_image<float4>& st ) {
+gpu_image<float4> gpu_ivacef_relax( const gpu_image<float4>& st ) {
     if ((st.w() <= 1) || (st.h() <= 1))
         return st;
     gpu_image<float4> tmp;
     tmp = relax_down(st);
-    tmp = relax(tmp);
+    tmp = gpu_ivacef_relax(tmp);
     tmp = relax_up(st, tmp);
     tmp = jacobi_step(tmp);
     return tmp;
@@ -179,9 +179,7 @@ gpu_image<float4> gpu_sobel_filt( const gpu_image<float4>& src, const gpu_image<
     bind(&texSRC4, src);
     imp_gpu_sobel_filt<<<src.blocks(), src.threads()>>>(prev, dst, threshold*threshold);
     GPU_CHECK_ERROR();
-    if (!prev.is_valid()) {
-        dst = relax(dst);
-    }
+
     return dst;
 }
 
@@ -320,6 +318,9 @@ gpu_image<float4> gpu_ivacef_sobel( const gpu_image<float4>& src, const gpu_imag
                                     float sigma_d, float tau_r )
 {
     gpu_image<float4> st2 = gpu_sobel_filt(src, st, tau_r);
+    if (!st.is_valid()) {
+        st2 = gpu_ivacef_relax(st2);
+    }
     st2 = gpu_gauss_filter_xy(st2, sigma_d);
     return st2;
 }

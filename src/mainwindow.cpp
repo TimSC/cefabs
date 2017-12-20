@@ -208,23 +208,62 @@ void MainWindow::process() {
 		else
 		{
 		    gpu_image<float4> st2 = gpu_sobel_filt(img, st, m_tau_r);
+
+			Mat tmp;
+			gpu_image_to_mat(st2, tmp);
+
+			imwrite("st.png", tmp);
+
+			if (!st.is_valid()) {
+				st2 = gpu_ivacef_relax(st2);
+			}
+
 			st = gpu_gauss_filter_xy(st2, m_sigma_d);
 		}
-
-		Mat tmp;
-		gpu_image_to_mat(st, tmp);
-		imwrite("st.png", tmp);
 		
-		imwrite("st1.png", mimg2);
-		Mat st2, st3;
-		Sobel(mimg2, st2, CV_32F, 1, 1, 1);
-		double min, max;
-		cv::minMaxLoc(st2, &min, &max);
-		cout << "st2type " << st2.type() << " (" << min << "," << max << ")" << endl;
-		imwrite("st2.png", (st2 - min) / (max-min) * 255.0);
+		Mat nrm, st2h, st2v, st3, st2;
+		Mat mimg3;
+		cvtColor(mimg2, mimg3, COLOR_RGBA2RGB);
+		nrm = mimg3 / 255.0f;
+		Mat hk = Mat(3, 3, CV_32F, Scalar(0.0f));
+		hk.at<float>(0,0) = -0.183f;
+		hk.at<float>(1,0) = -0.634f;
+		hk.at<float>(2,0) = -0.183f;
+		hk.at<float>(0,2) = 0.183f;
+		hk.at<float>(1,2) = 0.634f;
+		hk.at<float>(2,2) = 0.183f;
+		hk *= 0.5f;
+		
+		filter2D(nrm, st2h, CV_32F, hk);
+		filter2D(nrm, st2v, CV_32F, hk.t());
+		
+		float thres2 = m_tau_r*m_tau_r;
+		Mat blank(st2h.size(), CV_32FC4);
+		st2 = blank;
+		for(size_t r=0; r<st2h.rows; r++)
+		{
+			for(size_t c=0; c<st2h.cols; c++)
+			{
+				cv::Vec3f &u = st2h.at<cv::Vec3f>(r,c);
+				cv::Vec3f &v = st2v.at<cv::Vec3f>(r,c);
 
-		GaussianBlur(st2, st3, cv::Size(0, 0), m_tau_r);
-		imwrite("st3.png", st3);
+				float uu = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
+				float vv = v[0]*v[0]+v[1]*v[1]+v[2]*v[2];
+				float uv = u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
+				float mag = uu*uu+vv*vv+2.0f*uv*uv;
+
+				st2.at<cv::Vec4f>(r,c)[0] = uu;
+				st2.at<cv::Vec4f>(r,c)[1] = vv;
+				st2.at<cv::Vec4f>(r,c)[2] = uv;
+				st2.at<cv::Vec4f>(r,c)[3] = mag;
+
+			}
+		}
+
+		imwrite("st2.png", st2*255.0);
+
+		//GaussianBlur(st2, st3, cv::Size(0, 0), m_tau_r);
+		//imwrite("st3.png", st3);
 
         img = gpu_stgauss2_filter(img, st, m_sigma_t, m_max_angle, true, true, true, 2, 1);
 
