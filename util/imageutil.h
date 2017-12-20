@@ -38,4 +38,12 @@ QImage gpu_image_to_qimage(const gpu_image<float4>& image);
 void qimage_to_mat(const QImage& image, cv::OutputArray out);
 void mat_to_qimage(cv::InputArray image, QImage& out);
 
+template <typename T> gpu_image<T> gpu_image_from_mat(cv::InputArray image);
+template <> gpu_image<uchar4> gpu_image_from_mat(cv::InputArray image);
+template <> gpu_image<float4> gpu_image_from_mat(cv::InputArray image);
+
+void gpu_image_to_mat(const gpu_image<uchar>& image, cv::OutputArray out);
+void gpu_image_to_mat(const gpu_image<uchar4>& image, cv::OutputArray out);
+void gpu_image_to_mat(const gpu_image<float>& image, cv::OutputArray out);
+void gpu_image_to_mat(const gpu_image<float4>& image, cv::OutputArray out);
 
