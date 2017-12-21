@@ -44,3 +44,4 @@ void cef_opencv_sobel(cv::InputArray mimg, cv::OutputArray out)
 	tmp.push_back(mag);
 	merge(tmp, out);
 }
+
