@@ -205,9 +205,11 @@ void MainWindow::process() {
 	gpu_image<float4> tfm;
 
 	for (int k = 0; k < m_N; ++k) {
-		if(false)
+
+		int mode = 2;
+		if(mode == 0)
 			st = gpu_ivacef_sobel(img, st, m_sigma_d, m_tau_r);
-		else
+		else if(mode == 1)
 		{
 			gpu_image<float4> st2 = gpu_sobel_filt(img, st, m_tau_r);
 
@@ -221,22 +223,33 @@ void MainWindow::process() {
 			//gpu_image_to_mat(st, tmp);
 			//imwrite("st.png", tmp);
 		}
+		else if(mode == 2)
+		{
+			Mat stm, st2, st3;
+			gpu_image_to_mat(st, stm);
+			cef_opencv_sobel(ming3, stm, m_tau_r*m_tau_r, st2);	
+			//imwrite("st2.png", st2*255.0);
+
+			GaussianBlur(st2, st3, cv::Size(0, 0), m_sigma_d);
+			//imwrite("st3.png", st3*255.0);
+			
+			st = gpu_image_from_mat<float4>(st3);
+		}
+
+		mode = 0;
+		if(mode==0 || mode==1)
+			img = gpu_stgauss2_filter(img, st, m_sigma_t, m_max_angle, true, true, true, 2, 1);
+		else if(mode == 2)
+		{
+			Mat st3, st4;
+			gpu_image_to_mat(st, st3);
+			cef_opencv_stgauss2_filter<Vec4f, 1, CV_32F, Vec4f, 1, CV_32F, 2> ( ming3, st3, 
+										  m_sigma_t, m_max_angle, true,
+										  1.0f,
+										  st4 );
+			img = gpu_image_from_mat<float4>(st4);
+		}
 		
-		Mat st2, st3;
-		cef_opencv_sobel(ming3, st2);	
-		//imwrite("st2.png", st2*255.0);
-
-		GaussianBlur(st2, st3, cv::Size(0, 0), m_sigma_d);
-		//imwrite("st3.png", st3*255.0);
-	
-		Mat st4;
-		cef_opencv_stgauss2_filter<Vec4f, 1, CV_32F, Vec4f, 1, CV_32F, 2> ( ming3, st3, 
-									  m_sigma_t, m_max_angle, true,
-									  1.0f,
-									  st4 );
-
-		img = gpu_stgauss2_filter(img, st, m_sigma_t, m_max_angle, true, true, true, 2, 1);
-
 		st = gpu_ivacef_sobel(img, st, m_sigma_d, m_tau_r);
 		tfm = gpu_st_tfm(st);   
 
@@ -246,7 +259,7 @@ void MainWindow::process() {
 	}
 
 	img = gpu_stgauss2_filter(img, st, m_sigma_a, 90, false, true, true, 2, 1);
-	
+
 	m_st = st.cpu();
 	m_tfm = tfm.cpu();
 	m_result[0] = src;

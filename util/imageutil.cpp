@@ -252,24 +252,61 @@ template <> gpu_image<float4> gpu_image_from_mat(cv::InputArray image) {
 
 void gpu_image_to_mat(const gpu_image<uchar>& image, cv::OutputArray out) {
 
-    Mat data(image.h(), image.w(), CV_8UC1);
-    //for (int i = 0; i < 256; ++i) dst.setColor(i, qRgb(i,i,i));
-    copy(data.data, data.step[0], &image);
-    data.copyTo(out);
+	if(image.is_valid())
+	{
+		Mat data(image.h(), image.w(), CV_8UC1);
+		copy(data.data, data.step[0], &image);
+		data.copyTo(out);
+	}
+	else
+	{
+		Mat empty;
+		empty.copyTo(out);
+	}
 }
 
 void gpu_image_to_mat(const gpu_image<uchar4>& image, cv::OutputArray out) {
 
-    Mat data(image.h(), image.w(), CV_8UC4);
-    copy(data.data, data.step[0], &image);
-    data.copyTo(out);
+	if(image.is_valid())
+	{
+		Mat data(image.h(), image.w(), CV_8UC4);
+		copy(data.data, data.step[0], &image);
+		data.copyTo(out);
+	}
+	else
+	{
+		Mat empty;
+		empty.copyTo(out);
+	}
 }
 
 void gpu_image_to_mat(const gpu_image<float>& image, cv::OutputArray out) {
-    gpu_image_to_mat(gpu_32f_to_8u(image), out);
+
+	if(image.is_valid())
+	{
+		Mat data(image.h(), image.w(), CV_32F);
+		copy(data.data, data.step[0], &image);
+		data.copyTo(out);
+	}
+	else
+	{
+		Mat empty;
+		empty.copyTo(out);
+	}
 }
 
 void gpu_image_to_mat(const gpu_image<float4>& image, cv::OutputArray out) {
-    gpu_image_to_mat(gpu_32f_to_8u(image), out);
+
+	if(image.is_valid())
+	{
+		Mat data(image.h(), image.w(), CV_32FC4);
+		copy(data.data, data.step[0], &image);
+		data.copyTo(out);
+	}
+	else
+	{
+		Mat empty;
+		empty.copyTo(out);
+	}
 }
 

@@ -3,8 +3,12 @@
 using namespace cv;
 using namespace std;
 
-void cef_opencv_sobel(cv::InputArray mimg, cv::OutputArray out)
+void cef_opencv_sobel(cv::InputArray mimg, cv::Mat stm, float threshold2, cv::OutputArray out)
 {
+	if(mimg.channels() != 4)
+		throw invalid_argument("Expected 4 channels in cef_opencv_sobel input");
+	if(!stm.empty() && (stm.channels() != 4))
+		throw invalid_argument("Expected 4 channels in cef_opencv_sobel input");
 	UMat mimg2 = mimg.getUMat();
 	UMat st2h, st2v, st2;
 	Mat hk = Mat(3, 3, CV_32F, Scalar(0.0f));
@@ -37,11 +41,39 @@ void cef_opencv_sobel(cv::InputArray mimg, cv::OutputArray out)
 	uvm.mul(uvm).convertTo(uvm2sc, CV_32F, 2.0);
 	add(add1, uvm2sc, mag);
 
-	vector<UMat> tmp;
-	tmp.push_back(uum);
-	tmp.push_back(vvm);
-	tmp.push_back(uvm);
-	tmp.push_back(mag);
-	merge(tmp, out);
+	Mat magm = mag.getMat(ACCESS_READ);
+	Mat uumm = uum.getMat(ACCESS_READ);
+	Mat vvmm = vvm.getMat(ACCESS_READ);
+	Mat uvmm = uvm.getMat(ACCESS_READ);
+	Mat outTmp;
+	mimg.copyTo(outTmp);
+	
+	for(int r=0; r<magm.rows; r++)
+		for(int c=0; c<magm.cols; c++)
+		{
+			float magval = magm.at<float>(r, c);
+			Vec4f &outvals = outTmp.at<Vec4f>(r, c);
+			if(magval < threshold2)
+			{
+				if(!stm.empty())
+					outvals = stm.at<Vec4f>(r, c);
+				else
+				{
+					outvals[0] = uumm.at<float>(r, c);
+					outvals[1] = vvmm.at<float>(r, c);
+					outvals[2] = uvmm.at<float>(r, c);
+					outvals[3] = 0.0f;
+				}
+			}
+			else
+			{
+				outvals[0] = uumm.at<float>(r, c);
+				outvals[1] = vvmm.at<float>(r, c);
+				outvals[2] = uvmm.at<float>(r, c);
+				outvals[3] = magval;
+			}
+		}
+
+	outTmp.copyTo(out);
 }
 

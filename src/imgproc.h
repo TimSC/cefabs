@@ -3,7 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 
-void cef_opencv_sobel(cv::InputArray mimg2, cv::OutputArray st2);
+void cef_opencv_sobel(cv::InputArray mimg, cv::Mat st, float threshold2, cv::OutputArray out);
 
 // https://stackoverflow.com/a/13301755/4288232
 template<typename T, int interpolate, int D> T getColorSubpix(const cv::Mat& img, cv::Point2f pt)
